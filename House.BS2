@@ -1,0 +1,147 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+main:
+LOW 11
+po VAR Word : nu VAR Word : biA VAR Byte(3) : nuC VAR Word : pos VAR Word : pos = 1 : comb VAR Byte(5)
+light VAR Word
+FOR nuC = 1 TO 4
+comb(nuC) = 0
+NEXT
+arm VAR Word : arm = 0
+canClick VAR Word : canClick = 0
+canLock VAR Word : canLock = 1
+off VAR Word : off = 0
+PAUSE 100
+GOSUB biInput
+IF comb(1) = 1 AND comb(2) = 3 AND comb(3) = 3 AND comb(4) = 7 AND canLock THEN
+HIGH 6
+LOW 7
+HIGH 2
+PAUSE 75
+LOW 6
+FREQOUT 1, 100, 1
+PAUSE 60
+FREQOUT 1, 100, 1
+PAUSE 60
+FREQOUT 1, 400, 6000
+GOTO armed
+ELSE
+FREQOUT 1,100,1
+PAUSE 75
+FREQOUT 1,100,1
+PAUSE 75
+FREQOUT 1,100,1
+PAUSE 75
+FREQOUT 1,100,1
+PAUSE 100
+GOTO main
+ENDIF
+
+biInput:
+FOR nuC = 1 TO 4
+comb(nuC) = 0
+NEXT
+pos = 1
+DO
+IF arm = 0 THEN
+HIGH 8
+RCTIME 8,1,light
+IF light > 500 THEN
+FREQOUT 1, 100, 1
+PAUSE 60
+FREQOUT 1, 100, 1
+PAUSE 60
+FREQOUT 1, 400, 6000
+arm = 1
+GOTO armed
+ENDIF
+
+
+IF IN4 AND IN5 THEN
+HIGH 9 : LOW 10
+canLock = 1
+ELSE
+HIGH 10 : LOW 9
+canLock = 0
+ENDIF
+ENDIF
+IF arm THEN
+HIGH 2
+arm = 1
+LOW 9
+LOW 10
+
+HIGH 11
+DEBUG DEC IN4
+IF IN4 =0 OR IN5 = 0 OR IN3 THEN
+off = 1
+ENDIF
+IF off THEN
+FREQOUT 1, 100, 100
+ENDIF
+ENDIF
+
+'get binary from numberpad
+biA(0) = 1 - IN15
+biA(1) = 1 - IN14
+biA(2) = 1 - IN13
+biA(3) = 1 - IN12
+'convert bianry to decimal
+po = 1
+nu = 0
+FOR nuC = 0 TO 3
+nu = nu + (biA(nuC)* po)
+po = po * 2
+NEXT
+'store input
+IF canClick > 1 THEN
+IF off THEN
+canClick = canClick - 5
+ELSE
+canClick = canClick - 5
+ENDIF
+ENDIF
+IF nu <> 0 AND canClick < 5  THEN
+canClick = 5
+IF off= 0 THEN
+FREQOUT 1, 100, 1
+ENDIF
+comb(pos) = nu
+pos = pos + 1
+ENDIF
+DEBUG HOME
+FOR nuC = 1 TO 4
+DEBUG DEC comb(nuC)
+NEXT
+DEBUG DEC canClick
+LOOP UNTIL IN0 = 0
+RETURN
+
+
+
+armed:
+arm = 1
+LOW 9
+LOW 10
+DO
+HIGH 11
+GOSUB biInput
+IF comb(1) = 1 AND comb(2) = 3 AND comb(3) = 3 AND comb(4) = 7 THEN
+HIGH 7
+LOW 6
+LOW 2
+PAUSE 75
+LOW 7
+FREQOUT 1, 200, 1
+PAUSE 60
+FREQOUT 1, 200, 2000
+PAUSE 60
+arm = 0
+off = 0
+GOTO main
+ELSE
+GOTO armed
+ENDIF
+
+LOOP
